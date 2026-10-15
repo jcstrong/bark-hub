@@ -4,9 +4,12 @@ ENV TZ=Asia/Shanghai \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends tzdata \
-    && rm -rf /var/lib/apt/lists/*
+ARG APT_MIRROR=""
+RUN set -eux; \
+    if [ -n "$APT_MIRROR" ] && [ -f /etc/apt/sources.list.d/debian.sources ]; then sed -i "s|deb.debian.org|$APT_MIRROR|g" /etc/apt/sources.list.d/debian.sources; fi; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends tzdata; \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -16,7 +19,6 @@ RUN pip install --no-cache-dir -i ${PIP_INDEX_URL} -r requirements.txt
 
 COPY app ./app
 COPY scripts ./scripts
-COPY static ./static
 
 RUN useradd -m barkhub \
     && mkdir /data \
