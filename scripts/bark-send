@@ -27,7 +27,7 @@ args=(--data-urlencode "title=$title" --data-urlencode "body=$body" --data-urlen
 [ "${BARK_FORCE:-0}" = "1" ] && args+=(--data-urlencode "force=1")
 
 for h in "${HUBS[@]}"; do
-    resp=$(curl -sS -m 8 -X POST "$h/$item" "${args[@]}" 2>/dev/null) || continue
+    resp=$(curl -sS -m 8 --noproxy '*' -X POST "$h/$item" "${args[@]}" 2>/dev/null) || continue
     printf '%s\n' "$resp"
     printf '%s' "$resp" | grep -q '"code":200' && exit 0
 done
