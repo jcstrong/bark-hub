@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# bark-send v2 — 统一推送出口，走 bark-hub（事项制、免打扰与历史由 hub 统一管理）
+# 用法兼容 v1: bark-send "标题" "内容" [group]
+# 环境变量: BARK_LEVEL（active/passive/timeSensitive/critical）、BARK_FORCE=1 强制响铃、
+#           BARK_HUB 覆盖 hub 地址（默认先局域网后 Tailscale）
+set -u
+
+HUBS=("${BARK_HUB:-http://192.168.31.161:9193}" "http://100.90.80.9:9193")
+
+title="${1:?用法: bark-send 标题 内容 [group]}"; shift || true
+body="${1:-}"; shift || true
+group="${1:-小U}"; shift || true
+
+case "$group" in
+    "Bambu Lab")  item=bambu ;;
+    日报)         item=daily ;;
+    openclaw)     item=openclaw ;;
+    homarr)       item=homarr ;;
+    vultr-clash)  item=vultr ;;
+    GitHub)       item=github_mail ;;
+    *)            item=manual ;;
+esac
+
+args=(--data-urlencode "title=$title" --data-urlencode "body=$body" --data-urlencode "group=$group"
+      --data-urlencode "source=$(hostname -s)")
+[ -n "${BARK_LEVEL:-}" ] && args+=(--data-urlencode "level=$BARK_LEVEL")
+[ "${BARK_FORCE:-0}" = "1" ] && args+=(--data-urlencode "force=1")
+
+for h in "${HUBS[@]}"; do
+    resp=$(curl -sS -m 8 -X POST "$h/$item" "${args[@]}" 2>/dev/null) || continue
+    printf '%s\n' "$resp"
+    printf '%s' "$resp" | grep -q '"code":200' && exit 0
+done
+
+echo "bark-send: all bark-hub instances unreachable" >&2
+exit 1

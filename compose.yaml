@@ -1,0 +1,17 @@
+services:
+  bark-hub:
+    build:
+      context: .
+      args:
+        PIP_INDEX_URL: ${PIP_INDEX_URL:-https://pypi.org/simple}
+    container_name: bark-hub
+    restart: unless-stopped
+    ports:
+      - "9193:9193"
+    env_file: .env
+    environment:
+      BARKHUB_DB: /data/bark-hub.db
+    volumes:
+      - ./data:/data
+      # 只读挂载 v1 遗留数据，供一次性导入
+      - ./legacy-import:/legacy:ro
