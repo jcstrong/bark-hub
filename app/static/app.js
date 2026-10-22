@@ -11,12 +11,26 @@ async function api(path, opts = {}) {
   if (r.status === 401) { showTokenBar(); throw new Error('unauthorized'); }
   return r.json();
 }
-function showTokenBar() { $('tokenbar').classList.remove('hidden'); }
-function saveToken() {
+function showTokenBar() {
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === 'settings'));
+  document.querySelectorAll('.tabpane').forEach(p => p.classList.remove('active'));
+  $('tab-settings').classList.add('active');
+  $('token-msg').textContent = '需要配置 API Token（见下方）';
+  setTimeout(() => $('token-input').focus(), 50);
+}
+async function saveToken() {
   TOKEN = $('token-input').value.trim();
   localStorage.setItem('barkhub_token', TOKEN);
-  $('token-msg').textContent = '已保存';
-  boot();
+  $('token-msg').textContent = '验证中…';
+  try {
+    await api('/api/items');
+    $('token-msg').textContent = '✅ 验证成功，已加载数据';
+    boot();
+  } catch (e) {
+    $('token-msg').textContent = e.message === 'unauthorized'
+      ? '❌ token 无效：检查是否粘全 48 位、有无多余字符'
+      : '❌ 连不上服务器：' + e.message;
+  }
 }
 
 /* ---------- tabs ---------- */
@@ -34,15 +48,32 @@ async function loadStatus() {
   try {
     const s = await api('/api/status');
     $('subtitle').textContent = `事项 ${s.items} · 端点 ${s.endpoints} · 今日 ${s.today_count} 条 · bark-hub v${s.version}`;
-    const cards = [
-      { t: s.quiet ? '🌙 免打扰中' : '🔔 正常响铃', s: `窗口 ${s.window.start} – ${s.window.end} · 现在 ${s.now}`, cls: s.quiet ? 'warn' : 'ok' },
-      { t: String(s.today_count), s: '今日推送', cls: '' },
-      { t: String(s.total_count), s: `历史总量（保留 ${s.retention_days} 天）`, cls: '' },
-      { t: String(s.items), s: `事项 · ${s.endpoints} 个启用端点`, cls: '' },
-    ];
-    $('stat-cards').innerHTML = cards.map(c =>
-      `<div class="card"><div class="big ${c.cls}">${esc(c.t)}</div><div class="dimtxt">${esc(c.s)}</div></div>`).join('');
+    const qcls = s.quiet ? 'warn' : 'ok';
+    $('stat-cards').innerHTML =
+      `<div class="card"><div class="big ${qcls}">${s.quiet ? '🌙 免打扰中' : '🔔 正常响铃'}</div><div class="dimtxt">窗口 ${s.window.start} – ${s.window.end} · 现在 ${s.now}</div></div>` +
+      `<div class="card"><div class="row" style="justify-content:space-around;flex-wrap:wrap;gap:10px">
+         <div style="text-align:center"><div class="big">${s.today_count}</div><div class="dimtxt">今日推送</div></div>
+         <div style="text-align:center"><div class="big">${s.total_count}</div><div class="dimtxt">历史总量（保留 ${s.retention_days} 天）</div></div>
+         <div style="text-align:center">
+           <div class="big" style="cursor:pointer;text-decoration:underline dotted;text-underline-offset:4px" onclick="toggleStatEndpoints()" title="点击展开/收起端点清单">${s.items}<span style="font-size:.45em" class="dimtxt"> 事项</span></div>
+           <div class="dimtxt">启用端点 ${s.endpoints}（点数字看明细）</div>
+         </div>
+       </div>
+       <div id="stat-endpoints" class="hidden" style="margin-top:10px"></div></div>`;
   } catch (e) { /* token bar shown */ }
+}
+
+async function toggleStatEndpoints() {
+  const box = $('stat-endpoints');
+  if (box && !box.classList.contains('hidden')) { box.classList.add('hidden'); return; }
+  if (!ITEMS.length) { try { ITEMS = await api('/api/items'); } catch (e) { return; } }
+  box.innerHTML = ITEMS.map(i => `
+    <div class="ep"><span class="${i.enabled ? 'ok-dot' : 'dim-dot'}">●</span>
+      <strong>${esc(i.name)}</strong> <code>${esc(i.key)}</code>
+      ${i.endpoints.filter(e => e.enabled).map(e =>
+        `→ ${esc(e.name || e.server_url)} <code>${esc(String(e.device_key).slice(0, 8))}…</code>`).join(' ') || '<span class="dimtxt">无启用端点</span>'}
+    </div>`).join('') || '<div class="nt">无事项</div>';
+  box.classList.remove('hidden');
 }
 
 /* ---------- items ---------- */

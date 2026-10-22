@@ -16,31 +16,10 @@
     <button class="tab" data-tab="items">事项</button>
     <button class="tab" data-tab="settings">设置</button>
   </nav>
-  <div id="tokenbar" class="tokenbar hidden">
-    <input id="token-input" type="password" placeholder="API Token（首次使用需配置）">
-    <button onclick="saveToken()">保存</button>
-    <span id="token-msg" class="dimtxt"></span>
-  </div>
 </header>
 <main>
   <section id="tab-overview" class="tabpane active">
     <div class="grid" id="stat-cards"></div>
-    <div class="card">
-      <h2>手动发送</h2>
-      <div class="row">
-        <select id="send-item"></select>
-        <input id="send-title" placeholder="标题" value="测试" style="min-width:120px">
-        <input id="send-body" placeholder="内容" style="flex:1;min-width:160px">
-        <select id="send-level">
-          <option value="">默认级别</option>
-          <option>active</option><option>passive</option>
-          <option>timeSensitive</option><option>critical</option>
-        </select>
-        <label class="chk"><input type="checkbox" id="send-force"> 强制响铃</label>
-        <button onclick="manualSend()">发送</button>
-      </div>
-      <div id="send-result" class="dimtxt"></div>
-    </div>
     <div class="card"><h2>最近通知</h2><div id="recent-list"></div></div>
   </section>
 
@@ -64,6 +43,31 @@
   </section>
 
   <section id="tab-settings" class="tabpane">
+    <div class="card">
+      <h2>API Token</h2>
+      <div class="row">
+        <input id="token-input" type="text" autocomplete="off" spellcheck="false" placeholder="粘贴 48 位 token" style="flex:1;min-width:220px">
+        <button onclick="saveToken()">保存并验证</button>
+        <span id="token-msg" class="dimtxt"></span>
+      </div>
+      <p class="dimtxt" style="margin-top:8px">管理接口访问密钥，在服务器 <code>~/bark-hub/.env</code> 的 <code>BARKHUB_TOKEN</code>。按「浏览器+入口」隔离保存：Homarr 直连、Control UI portal 每个入口都要各输一次。</p>
+    </div>
+    <div class="card">
+      <h2>手动发送</h2>
+      <div class="row">
+        <select id="send-item"><option value="">选择事项…</option></select>
+        <input id="send-title" placeholder="标题" value="测试" style="min-width:120px">
+        <input id="send-body" placeholder="内容" style="flex:1;min-width:160px">
+        <select id="send-level">
+          <option value="">默认级别</option>
+          <option>active</option><option>passive</option>
+          <option>timeSensitive</option><option>critical</option>
+        </select>
+        <label class="chk"><input type="checkbox" id="send-force"> 强制响铃</label>
+        <button onclick="manualSend()">发送</button>
+      </div>
+      <div id="send-result" class="dimtxt"></div>
+    </div>
     <div class="card">
       <h2>免打扰与保留</h2>
       <div class="row">
@@ -107,6 +111,6 @@
     </div>
   </div>
 </div>
-<script src="/app.js"></script>
+<script src="/app.js?v=3"></script>
 </body>
 </html>
